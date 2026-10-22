@@ -162,14 +162,22 @@ fun Ring(fraction: Float, center: String, sub: String, start: Color, end: Color,
             val tl = Offset(sw / 2, sw / 2)
             val sz = Size(size.width - sw, size.height - sw)
             drawArc(track, 0f, 360f, false, tl, sz, style = Stroke(sw))
-            rotate(-90f) {
-                drawArc(
-                    brush = Brush.sweepGradient(
-                        0f to start, maxOf(anim, 0.02f) to end, 1f to end
-                    ),
-                    startAngle = 0f, sweepAngle = 360f * anim, useCenter = false,
-                    topLeft = tl, size = sz, style = Stroke(sw, cap = StrokeCap.Round)
-                )
+            val sweep = 360f * anim
+            if (sweep > 0.5f) {
+                val r = sz.width / 2
+                val c = Offset(size.width / 2, size.height / 2)
+                rotate(-90f) {
+                    // Düz uçlu yay: renk geçişi tam olarak yayın başı ile sonu arasında kalır.
+                    drawArc(
+                        brush = Brush.sweepGradient(0f to start, anim to end, 1f to end),
+                        startAngle = 0f, sweepAngle = sweep, useCenter = false,
+                        topLeft = tl, size = sz, style = Stroke(sw, cap = StrokeCap.Butt)
+                    )
+                    // Yuvarlak uçlar: her biri kendi rengiyle çizilir.
+                    drawCircle(start, sw / 2, c + Offset(r, 0f))
+                    val a = Math.toRadians(sweep.toDouble())
+                    drawCircle(end, sw / 2, c + Offset(r * cos(a).toFloat(), r * sin(a).toFloat()))
+                }
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

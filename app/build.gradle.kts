@@ -14,8 +14,8 @@ android {
         applicationId = "com.spatt.ekran.suresi"
         minSdk = 26
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.2.1"
+        versionCode = 6
+        versionName = "1.2.3"
     }
     signingConfigs {
         create("spatt") {

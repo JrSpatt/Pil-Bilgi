@@ -116,7 +116,7 @@ Built with Kotlin and Jetpack Compose. Package name: `com.spatt.ekran.suresi`.
 
 ### Limitations and notes
 
-- Battery values come from the manufacturer's kernel and firmware, so availability and units vary between devices. Fields a device does not report are shown as "—".
+- Battery values come from the manufacturer's kernel and firmware, so availability and units vary between devices. The app auto-detects whether a device reports current and charge in µA/µAh or mA/mAh. Fields a device does not report are shown as "—".
 - The sign of the current is taken from the charging status, because manufacturers report current direction inconsistently.
 - `batterystats` periods differ between Android versions and skins. On some devices the counters restart when the battery passes a high charge level after unplugging, not strictly at 100%.
 - Cycle count and capacity files are readable only with root on most devices, and some devices do not expose them at all.

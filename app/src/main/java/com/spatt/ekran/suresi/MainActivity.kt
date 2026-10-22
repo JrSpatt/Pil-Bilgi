@@ -205,7 +205,7 @@ fun BatteryTab(live: Live?, root: RootBat?) {
     Spacer(Modifier.height(24.dp))
 
     val sign = if (live.charging) "+" else "−"
-    SectionTitle("Canlı değerler", "root gerekmez", Ruby)
+    SectionTitle("Canlı değerler", "Canlı", Ruby)
     InfoGrid(
         listOf(
             "Anlık akım" to (live.ma?.let { "$sign$it mA" } ?: "—"),
@@ -224,7 +224,7 @@ fun BatteryTab(live: Live?, root: RootBat?) {
     )
 
     Spacer(Modifier.height(24.dp))
-    SectionTitle("Kapasite ve döngü", "root", Gold)
+    SectionTitle("Kapasite ve döngü", "Sağlık", Gold)
     val cycle = root?.cycle ?: live.cycleIntent
     val design = root?.designMah
     val full = root?.fullMah ?: live.estCapMah

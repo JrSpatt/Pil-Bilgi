@@ -151,12 +151,19 @@ fun readLive(ctx: Context): Live {
     val mv = i?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0) ?: 0
     val cyc = i?.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1) ?: -1
 
+    // Cihazlar birimi farklı verir: çoğu µA/µAh, bazıları (ör. bazı tabletler) doğrudan mA/mAh.
     fun ua(prop: Int): Int? {
         val v = bm.getIntProperty(prop)
-        return if (v == Int.MIN_VALUE) null else abs(v) / 1000   // µA -> mA
+        if (v == Int.MIN_VALUE) return null
+        val a = abs(v)
+        return if (a < 5000) a else a / 1000
     }
     val counter = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
-    val chargeMah = if (counter == Int.MIN_VALUE || counter <= 0) null else counter / 1000
+    val chargeMah = when {
+        counter == Int.MIN_VALUE || counter <= 0 -> null
+        counter > 100_000 -> counter / 1000   // µAh
+        else -> counter                        // zaten mAh
+    }
     val est = if (chargeMah != null && level > 0) chargeMah * 100 / level else null
 
     return Live(

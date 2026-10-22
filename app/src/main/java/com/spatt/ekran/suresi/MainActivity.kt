@@ -1,7 +1,9 @@
 package com.spatt.ekran.suresi
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.Crossfade
@@ -12,7 +14,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.PullToRefreshBox
+import androidx.compose.material3.PullToRefreshDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -34,26 +40,42 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { App(lifecycle) }
+        setContent { App(this) }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun App(lifecycle: Lifecycle) {
+fun App(activity: ComponentActivity) {
     val ctx = LocalContext.current
+    val lifecycle = activity.lifecycle
+    val scope = rememberCoroutineScope()
+    val prefs = remember { ctx.getSharedPreferences("ui", Context.MODE_PRIVATE) }
+
+    var dark by remember { mutableStateOf(prefs.getBoolean("dark", true)) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var tick by remember { mutableIntStateOf(0) }
+    var refreshing by remember { mutableStateOf(false) }
     var screenState by remember { mutableStateOf<UiState>(UiState.Loading) }
     var live by remember { mutableStateOf<Live?>(null) }
     var rootBat by remember { mutableStateOf<RootBat?>(null) }
     var level by remember { mutableIntStateOf(batteryLevel(ctx)) }
 
+    suspend fun refreshOnce() {
+        level = batteryLevel(ctx)
+        if (tab == 0) {
+            screenState = withContext(Dispatchers.IO) { readStats() }
+        } else {
+            live = withContext(Dispatchers.IO) { readLive(ctx) }
+            rootBat = withContext(Dispatchers.IO) { readRootBat() }
+        }
+    }
+
     // Sekme değişince, yenile düğmesine basılınca ve uygulamaya dönülünce çalışır.
     LaunchedEffect(tab, tick) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             if (tab == 0) {
-                level = batteryLevel(ctx)
-                screenState = withContext(Dispatchers.IO) { readStats() }
+                refreshOnce()
             } else {
                 launch { rootBat = withContext(Dispatchers.IO) { readRootBat() } }
                 while (true) {
@@ -64,25 +86,64 @@ fun App(lifecycle: Lifecycle) {
         }
     }
 
-    val accent by animateColorAsState(if (tab == 0) Green else RubyLight, tween(250), label = "accent")
+    // Durum çubuğu ve gezinme çubuğu simgelerini temaya uydur.
+    DisposableEffect(dark) {
+        val t = android.graphics.Color.TRANSPARENT
+        val style = if (dark) SystemBarStyle.dark(t) else SystemBarStyle.light(t, t)
+        activity.enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+        onDispose { }
+    }
 
-    Column(Modifier.fillMaxSize().background(Bg).systemBarsPadding()) {
-        Header(
-            if (tab == 0) "Ekran Süresi" else "Pil Bilgileri",
-            if (tab == 0) "Son şarjdan beri" else "Canlı değerler her saniye yenilenir",
-            live?.level ?: level, accent
-        ) { tick++ }
+    CompositionLocalProvider(LocalPalette provides (if (dark) DarkPalette else LightPalette)) {
+        val accent by animateColorAsState(if (tab == 0) Green else RubyLight, tween(250), label = "accent")
+        val pullState = rememberPullToRefreshState()
 
-        Crossfade(tab, Modifier.weight(1f).fillMaxWidth(), tween(250), label = "tab") { t ->
-            Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        Column(Modifier.fillMaxSize().background(Bg).systemBarsPadding()) {
+            Header(
+                if (tab == 0) "Ekran Süresi" else "Pil Bilgileri",
+                if (tab == 0) "Son şarjdan beri" else "Canlı · her saniye",
+                live?.level ?: level, accent, dark,
+                onToggleTheme = {
+                    dark = !dark
+                    prefs.edit().putBoolean("dark", dark).apply()
+                },
+                onRefresh = { tick++ }
+            )
+
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = {
+                    scope.launch {
+                        refreshing = true
+                        refreshOnce()
+                        delay(350)
+                        refreshing = false
+                    }
+                },
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                state = pullState,
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullState,
+                        isRefreshing = refreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        containerColor = Card,
+                        color = accent
+                    )
+                }
             ) {
-                Spacer(Modifier.height(12.dp))
-                if (t == 0) ScreenTab(screenState) else BatteryTab(live, rootBat)
+                Crossfade(tab, Modifier.fillMaxSize(), tween(250), label = "tab") { t ->
+                    Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(Modifier.height(12.dp))
+                        if (t == 0) ScreenTab(screenState) else BatteryTab(live, rootBat)
+                    }
+                }
             }
+            BottomBar(tab) { tab = it }
         }
-        BottomBar(tab) { tab = it }
     }
 }
 

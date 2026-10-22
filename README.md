@@ -35,8 +35,9 @@ Some Android skins hide the "screen on time" figure from their built-in battery 
 
 **General**
 - Smooth animated rings, rounded cards and drawn vector icons
-- Dark theme with green (screen) and ruby (battery) accents and gold highlights
-- Data refreshes when you switch tabs, tap refresh or return to the app
+- Green (screen) and ruby (battery) accents with gold highlights, in dark and light themes
+- Light / dark theme toggle in the header, remembered between launches
+- Pull down to refresh (like in Chrome), refresh button, and automatic refresh when you switch tabs or return to the app
 - Adaptive launcher icon with Android 13+ themed-icon support
 - No internet permission, no ads, no analytics, no accounts
 
@@ -123,7 +124,7 @@ Built with Kotlin and Jetpack Compose. Package name: `com.spatt.ekran.suresi`.
 
 ### Privacy
 
-The app declares no permissions, does not use the network and stores nothing. Root is used only to run read-only commands (`dumpsys batterystats` and `cat` on battery files).
+The app declares no permissions, does not use the network and stores only your light/dark theme choice on the device. Root is used only to run read-only commands (`dumpsys batterystats` and `cat` on battery files).
 
 ### Author
 
@@ -152,8 +153,8 @@ Bazı Android arayüzleri, sistem pil sayfalarında "ekran açık kalma süresi"
 
 **Genel**
 - Akıcı animasyonlu halkalar, yuvarlak köşeli kartlar, çizimle yapılmış simgeler
-- Koyu tema; ekran için yeşil, pil için ruby vurgu, altın sarısı metinler
-- Sekme değişince, yenile düğmesine basınca ve uygulamaya dönünce veriler tazelenir
+- Koyu ve açık tema (üstteki düğmeyle değişir, seçiminiz hatırlanır); ekran için yeşil, pil için ruby vurgu, altın sarısı metinler
+- Chrome'daki gibi aşağı çekerek yenileme, yenile düğmesi; sekme değişince ve uygulamaya dönünce de veriler tazelenir
 - İnternet izni yok, reklam yok, veri toplama yok
 
 ### Nasıl çalışır?
@@ -184,7 +185,7 @@ Her `push` işleminde GitHub Actions bir APK üretir. Güncellemelerde imzanın 
 
 ### Gizlilik
 
-Uygulama hiçbir izin istemez, ağa bağlanmaz ve hiçbir şey kaydetmez. Root yalnızca salt okunur komutları çalıştırmak için kullanılır.
+Uygulama hiçbir izin istemez, ağa bağlanmaz ve cihazda yalnızca açık/koyu tema seçiminizi saklar. Root yalnızca salt okunur komutları çalıştırmak için kullanılır.
 
 ### Yazar
 

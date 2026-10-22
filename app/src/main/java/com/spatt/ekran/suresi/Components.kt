@@ -26,35 +26,91 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.cos
+import kotlin.math.sin
 
-val Bg = Color(0xFF080D0A)
-val Card = Color(0xFF111915)
-val Track = Color(0xFF1B2620)
-val Green = Color(0xFF3DDC84)
-val Gold = Color(0xFFE8B84A)
-val Muted = Color(0xFF86948B)
-val Ink = Color(0xFFEAF5EE)
-val Ruby = Color(0xFFE0115F)
-val RubyLight = Color(0xFFFF5C8A)
+data class Palette(
+    val bg: Color, val card: Color, val track: Color, val muted: Color, val ink: Color,
+    val green: Color, val gold: Color, val ruby: Color, val rubyLight: Color
+)
+
+val DarkPalette = Palette(
+    bg = Color(0xFF080D0A), card = Color(0xFF111915), track = Color(0xFF1B2620),
+    muted = Color(0xFF86948B), ink = Color(0xFFEAF5EE),
+    green = Color(0xFF3DDC84), gold = Color(0xFFE8B84A),
+    ruby = Color(0xFFE0115F), rubyLight = Color(0xFFFF5C8A)
+)
+
+val LightPalette = Palette(
+    bg = Color(0xFFEEF3F0), card = Color(0xFFFFFFFF), track = Color(0xFFD9E3DD),
+    muted = Color(0xFF5F6F66), ink = Color(0xFF0E1A13),
+    green = Color(0xFF12934F), gold = Color(0xFFB07A00),
+    ruby = Color(0xFFC2104F), rubyLight = Color(0xFFD81B60)
+)
+
+val LocalPalette = staticCompositionLocalOf { DarkPalette }
+
+val Bg: Color @Composable get() = LocalPalette.current.bg
+val Card: Color @Composable get() = LocalPalette.current.card
+val Track: Color @Composable get() = LocalPalette.current.track
+val Muted: Color @Composable get() = LocalPalette.current.muted
+val Ink: Color @Composable get() = LocalPalette.current.ink
+val Green: Color @Composable get() = LocalPalette.current.green
+val Gold: Color @Composable get() = LocalPalette.current.gold
+val Ruby: Color @Composable get() = LocalPalette.current.ruby
+val RubyLight: Color @Composable get() = LocalPalette.current.rubyLight
 
 @Composable
-fun Header(title: String, subtitle: String, level: Int, accent: Color, onRefresh: () -> Unit) {
+fun Header(
+    title: String, subtitle: String, level: Int, accent: Color,
+    dark: Boolean, onToggleTheme: () -> Unit, onRefresh: () -> Unit
+) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, color = Gold, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, color = Gold, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
             Text(subtitle, color = Muted, fontSize = 13.sp)
         }
         BatteryIcon(level, accent)
         Spacer(Modifier.width(6.dp))
         Text("%$level", color = accent, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(12.dp))
+        Box(
+            Modifier.size(40.dp).clip(CircleShape).background(Card).clickable { onToggleTheme() },
+            contentAlignment = Alignment.Center
+        ) { ThemeIcon(dark, accent, Card) }
+        Spacer(Modifier.width(8.dp))
         Box(
             Modifier.size(40.dp).clip(CircleShape).background(Card).clickable { onRefresh() },
             contentAlignment = Alignment.Center
         ) { Text("↻", color = accent, fontSize = 20.sp) }
+    }
+}
+
+@Composable
+fun ThemeIcon(dark: Boolean, color: Color, bg: Color) {
+    Canvas(Modifier.size(22.dp)) {
+        val c = Offset(size.width / 2, size.height / 2)
+        if (dark) {
+            // ay: büyük daire, üstüne zemin renginde kaydırılmış daire
+            drawCircle(color, 8.dp.toPx(), c)
+            drawCircle(bg, 7.dp.toPx(), c + Offset(4.dp.toPx(), -3.dp.toPx()))
+        } else {
+            drawCircle(color, 4.dp.toPx(), c)
+            for (i in 0 until 8) {
+                val a = Math.toRadians(i * 45.0)
+                val dx = cos(a).toFloat()
+                val dy = sin(a).toFloat()
+                drawLine(
+                    color,
+                    c + Offset(dx * 7.dp.toPx(), dy * 7.dp.toPx()),
+                    c + Offset(dx * 10.dp.toPx(), dy * 10.dp.toPx()),
+                    strokeWidth = 1.8.dp.toPx(), cap = StrokeCap.Round
+                )
+            }
+        }
     }
 }
 
@@ -99,12 +155,13 @@ fun ScreenIcon(color: Color) {
 @Composable
 fun Ring(fraction: Float, center: String, sub: String, start: Color, end: Color, centerColor: Color) {
     val anim by animateFloatAsState(fraction.coerceIn(0f, 1f), tween(900), label = "ring")
+    val track = Track
     Box(Modifier.size(250.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize().padding(12.dp)) {
             val sw = 20.dp.toPx()
             val tl = Offset(sw / 2, sw / 2)
             val sz = Size(size.width - sw, size.height - sw)
-            drawArc(Track, 0f, 360f, false, tl, sz, style = Stroke(sw))
+            drawArc(track, 0f, 360f, false, tl, sz, style = Stroke(sw))
             rotate(-90f) {
                 drawArc(
                     brush = Brush.sweepGradient(

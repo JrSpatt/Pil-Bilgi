@@ -61,7 +61,7 @@ Estimated capacity is calculated as `charge counter ÷ battery level`. Battery h
 
 ### Install
 
-1. Download the APK from the repository's **Releases** page (tagged builds such as `v0.8.1`), or from the latest successful run in the **Actions** tab (artifact `EkranSuresi-apk`), or build it yourself (below).
+1. Download `app-release.apk` from the latest successful run in the repository's **Actions** tab (artifact `EkranSuresi-apk`), or build it yourself (below).
 2. Install the APK. Android may ask you to allow installs from unknown sources.
 3. Google Play Protect may warn about apps installed outside the Play Store or apps that use root. This is expected for self-distributed apps. Choose **More details → Install anyway**.
 4. Open the app and grant root access when your root manager asks.
@@ -70,7 +70,7 @@ Estimated capacity is calculated as `charge counter ÷ battery level`. Battery h
 
 **With GitHub Actions (no PC needed)**
 
-Every push to `main` runs `.github/workflows/build.yml` and produces an APK artifact. Pushing a tag that starts with `v` (for example `v0.8.1`) also publishes the APK as a GitHub pre-release. For a stable signature across updates, add your own signing key as repository secrets:
+Every push runs `.github/workflows/build.yml` and produces an APK artifact. For a stable signature across updates, add your own signing key as repository secrets:
 
 | Secret | Value |
 |---|---|

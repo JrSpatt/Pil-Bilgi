@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** Tek bir kalıcı root kabuğu: Magisk uyarısı uygulama başına bir kez çıkar. */
 object RootShell {
@@ -84,7 +85,7 @@ fun readStats(): UiState {
     if (out.isBlank()) return UiState.Error("Veri okunamadı.")
 
     var onBat = 0L; var off = 0L; var doze = 0L; var on = 0L; var cnt = 0
-    var mah = 0; var pOn = -1; var pOff = -1; var est = 0L
+    var mahRaw = -1.0; var pOn = -1; var pOff = -1; var est = 0L
     for (raw in out.lineSequence()) {
         val l = raw.trim()
         when {
@@ -95,14 +96,22 @@ fun readStats(): UiState {
                 on = durAfterColon(l)
                 cnt = Regex("\\)\\s*(\\d+)x").find(l)?.groupValues?.get(1)?.toInt() ?: 0
             }
-            l.startsWith("Screen on discharge:") && mah == 0 -> mah = intAfterColon(l)
+            l.startsWith("Screen on discharge:") && mahRaw < 0 ->
+                mahRaw = Regex("[\\d.,]+").find(l.substringAfter(":"))?.value
+                    ?.replace(',', '.')?.toDoubleOrNull() ?: 0.0
             l.startsWith("Amount discharged while screen on:") && pOn < 0 -> pOn = intAfterColon(l)
             l.startsWith("Amount discharged while screen off:") && pOff < 0 -> pOff = intAfterColon(l)
             l.startsWith("Estimated screen on time:") && est == 0L -> est = durAfterColon(l)
         }
     }
-    return if (on == 0L && onBat == 0L) UiState.Error("Veri okunamadı. Root izni verildiğinden emin olun.")
-    else UiState.Ok(Stats(onBat, off, doze, on, cnt, mah, maxOf(pOn, 0), maxOf(pOff, 0), est))
+    if (on == 0L && onBat == 0L) return UiState.Error("Veri okunamadı. Root izni verildiğinden emin olun.")
+
+    // Bazı cihazlar (ör. bazı tabletler) şarj sayacını mAh verdiği için sistem değeri 1000 kat
+    // küçük yazar (3.51 mAh gibi). Yüzde başına düşen mAh 1'in altındaysa ölçeği düzelt.
+    val pOnV = maxOf(pOn, 0)
+    var mah = mahRaw.coerceAtLeast(0.0)
+    if (pOnV >= 5 && mah / pOnV < 1.0) mah *= 1000
+    return UiState.Ok(Stats(onBat, off, doze, on, cnt, mah.roundToInt(), pOnV, maxOf(pOff, 0), est))
 }
 
 fun fmt(ms: Long): String {
